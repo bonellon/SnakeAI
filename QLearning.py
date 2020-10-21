@@ -1,8 +1,3 @@
-#reference https://github.com/kevinunger/snake-Q-Learning
-import sys
-
-import pygame
-
 import numpy as np
 from collections import defaultdict
 import pickle
@@ -19,19 +14,19 @@ class QLearningModel:
         self.rewardKill = -10000
         self.rewardScore = 50000000
 
+        # learningRate
         self.alpha = 0.00001
+        # ZerfallsRate
         self.alphaD = 0.999
-        # alphe --> learnRate
-        # alphaD --> Zerfallsrate
 
-        self.gamma = 0.9
         # discount factor
+        self.gamma = 0.9
 
+
+        # randomness
         self.e = 0.5
         self.ed = 1.3
         self.emin = 0.0001
-        # ed zerfallsrate von e
-        # epsilon --> randomness
 
         try:
             with open("Q.pickle", "rb") as file:
@@ -53,7 +48,6 @@ class QLearningModel:
     def generatePrediction(self, state):
 
         estReward = self.Q[state]
-
         prevReward = self.Q[self.oldState]
 
         index = 0
@@ -66,9 +60,7 @@ class QLearningModel:
         if self.oldAction == 'R':
             index = 3
 
-        # reward more negative, when taking many moves to score; reset, when food is eaten
         reward = (-10) / 50
-
         prevReward[index] = (1 - self.alpha) * prevReward[index] + \
                             self.alpha * (reward + self.gamma * max(estReward))
 
@@ -77,8 +69,6 @@ class QLearningModel:
         self.oldState = state
         basedOnQ = np.random.choice([True, False], p=[1 - self.e, self.e])
 
-        # basedOnQ --> choice based on Q-table
-        # basedOnQ == false --> random choice based on e (decreases over time with ed)
         if basedOnQ == False:
             choice = np.random.choice(['U', 'L', 'D', 'R'], p=[0.25, 0.25, 0.25, 0.25])
             self.oldAction = choice
@@ -107,7 +97,7 @@ class QLearningModel:
         # update Q of previous state (state which lead to gameOver)
         prevReward = self.Q[self.oldState]
 
-        if self.oldAction == None:
+        if self.oldAction is None:
             index = 0
         if self.oldAction == 'U':
             index = 0
@@ -146,7 +136,7 @@ class QLearningModel:
             print("e:", self.e)
             print("gamma:", self.gamma)
 
-        # decrease alpha / e over time(moves)
+        # decrease alpha / e per 100 moves
         if self.gameCounter % 100 == 0:
             self.alpha = self.alpha * self.alphaD
             if self.e > self.emin:
@@ -173,6 +163,7 @@ class QLearningModel:
 
         self.Q[self.oldState] = prevReward
 
+
 # Difficulty settings
 # Easy      ->  10
 # Medium    ->  25
@@ -188,7 +179,7 @@ frame_size_y = 480
 qLearn = QLearningModel()
 
 while True:
-    snake = Snake(100, 50, [[100, 50], [100-10, 50], [100-(2*10), 50]],[100, 50])
+    snake = Snake(100, 50, [[100, 50], [100 - 10, 50], [100 - (2 * 10), 50]], [100, 50])
     game = Game(frame_size_x, frame_size_y, difficulty, snake)
     while game.snake.alive:
         game.step(qLearn, "QLearning")

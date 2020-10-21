@@ -1,11 +1,7 @@
-"""
-Snake Eater
-Made with PyGame
-"""
 import pygame, sys, time, random
 import math
-
-from Snake import Snake, Food
+from Snake import Snake
+from Food import Food
 
 # Colors (R, G, B)
 black = pygame.Color(0, 0, 0)
@@ -36,7 +32,7 @@ class Game:
     def __init__(self, x, y, difficulty, snake):
         self.frame_size_x = x
         self.frame_size_y = y
-        self.pixelSize = 1 0
+        self.pixelSize = 10
         self.score = 0
         self.difficulty = difficulty
         self.snake = snake
@@ -45,8 +41,6 @@ class Game:
 
         self.game_window = pygame.display.set_mode((self.frame_size_x, self.frame_size_y))
 
-
-    # Score
     def show_score(self, choice, color, font, size):
         score_font = pygame.font.SysFont(font, size)
         score_surface = score_font.render('Score : ' + str(self.score), True, color)
@@ -56,9 +50,7 @@ class Game:
         else:
             score_rect.midtop = (self.frame_size_x / 2, self.frame_size_y / 1.25)
         self.game_window.blit(score_surface, score_rect)
-        # pygame.display.flip()
 
-    # Game Over
     def game_over(self):
         my_font = pygame.font.SysFont('times new roman', 90)
         game_over_surface = my_font.render('YOU DIED', True, red)
@@ -121,23 +113,26 @@ class Game:
         return abs(self.snake.head[0] - self.food.x) + abs(self.snake.head[1] - self.food.y)
 
     def get_apple_angle(self):
-        return math.degrees(math.atan2(self.snake.y-self.food.y, self.snake.x-self.food.x))
+        return math.degrees(math.atan2(self.snake.y - self.food.y, self.snake.x - self.food.x))
 
     def get_blocked_directions(self):
-        leftBlocked = self.collision_boundaries([self.snake.head[0] - self.pixelSize, self.snake.head[1]]) or self.collision_snake(
+        leftBlocked = self.collision_boundaries(
+            [self.snake.head[0] - self.pixelSize, self.snake.head[1]]) or self.collision_snake(
             [self.snake.head[0] - self.pixelSize, self.snake.head[1]])
-        topBlocked = self.collision_boundaries([self.snake.head[0], self.snake.head[1] - self.pixelSize]) or self.collision_snake(
+        topBlocked = self.collision_boundaries(
+            [self.snake.head[0], self.snake.head[1] - self.pixelSize]) or self.collision_snake(
             [self.snake.head[0], self.snake.head[1] - self.pixelSize])
-        rightBlocked = self.collision_boundaries([self.snake.head[0] + self.pixelSize, self.snake.head[1]]) or self.collision_snake(
+        rightBlocked = self.collision_boundaries(
+            [self.snake.head[0] + self.pixelSize, self.snake.head[1]]) or self.collision_snake(
             [self.snake.head[0] + self.pixelSize, self.snake.head[1]])
         bottomBlocked = self.collision_boundaries(
             [self.snake.head[0], self.snake.head[1] + self.pixelSize]) or self.collision_snake(
             [self.snake.head[0], self.snake.head[1] + self.pixelSize])
 
-        blockedPositions = int(leftBlocked is True), int(topBlocked is True), int(rightBlocked is True)\
+        blockedPositions = int(leftBlocked is True), int(topBlocked is True), int(rightBlocked is True) \
             , int(bottomBlocked is True)
 
-        sD = ""  # als String concatenated
+        sD = ""
         for x in blockedPositions:
             sD += str(x)
         return sD
@@ -165,7 +160,7 @@ class Game:
 
         topDistance = 1
         for i in range(self.pixelSize, self.frame_size_y + self.pixelSize, self.pixelSize):
-            topBlocked = self.collision_snake([self.snake.head[0], self.snake.head[1] -i])
+            topBlocked = self.collision_snake([self.snake.head[0], self.snake.head[1] - i])
             if topBlocked:
                 break
             topDistance += 1
@@ -183,7 +178,7 @@ class Game:
                 bottomDistance = 0
                 break
 
-        return str(leftDistance)+'_'+str(rightDistance)+'_'+str(topDistance)+'_'+str(bottomDistance)
+        return str(leftDistance) + '_' + str(rightDistance) + '_' + str(topDistance) + '_' + str(bottomDistance)
 
     def getObservations(self):
 
@@ -193,7 +188,7 @@ class Game:
         blockedDirections = self.get_blocked_directions()
 
         return wallDistance[0], wallDistance[1], wallDistance[2], wallDistance[3], appleDistance, appleAngle, \
-               blockedDirections[0],blockedDirections[1], blockedDirections[2], blockedDirections[3]
+               blockedDirections[0], blockedDirections[1], blockedDirections[2], blockedDirections[3]
 
     def paramsToState(self):
 
@@ -228,7 +223,7 @@ class Game:
         distanceToSnakeTop
         distanceToSnakeBottom
         '''
-        state = foodPosition + "_" + blockedPositions + "_" + direction# + "_" + snakeDistance
+        state = foodPosition + "_" + blockedPositions + "_" + direction  # + "_" + snakeDistance -> Determined to worsen QLearning performance
         return state
 
     def step(self, model, gameType):
@@ -238,7 +233,6 @@ class Game:
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
-                # Whenever a key is pressed down
                 elif event.type == pygame.KEYDOWN:
                     # W -> Up; S -> Down; A -> Left; D -> Right
                     if event.key == pygame.K_UP or event.key == ord('w'):
@@ -256,7 +250,6 @@ class Game:
             action = model.generatePrediction(self.paramsToState())
 
         if action is not None:
-            # Making sure the snake cannot move in the opposite direction instantaneously
             if action == 0 and self.snake.direction != 'DOWN':
                 self.snake.direction = 'UP'
             if action == 1 and self.snake.direction != 'UP':
@@ -266,7 +259,6 @@ class Game:
             if action == 3 and self.snake.direction != 'LEFT':
                 self.snake.direction = 'RIGHT'
 
-        # Moving the snake
         if self.snake.direction == 'UP':
             self.snake.y -= self.pixelSize
         if self.snake.direction == 'DOWN':
@@ -287,7 +279,6 @@ class Game:
             self.snake.body.pop()
         self.snake.head = self.snake.body[0]
 
-        # Spawning food on the screen
         if not self.food.spawned:
             self.food.x = random.randrange(1, (self.frame_size_x // self.pixelSize)) * self.pixelSize
             self.food.y = random.randrange(1, (self.frame_size_y // self.pixelSize)) * self.pixelSize
@@ -302,7 +293,8 @@ class Game:
         body_part = 0
         for node in self.snake.body:
             if body_part == 0:
-                pygame.draw.rect(self.game_window, magenta, pygame.Rect(node[0], node[1], self.pixelSize, self.pixelSize))
+                pygame.draw.rect(self.game_window, magenta,
+                                 pygame.Rect(node[0], node[1], self.pixelSize, self.pixelSize))
             else:
                 pygame.draw.rect(self.game_window, green, pygame.Rect(node[0], node[1], self.pixelSize, self.pixelSize))
             body_part += 1
@@ -336,20 +328,13 @@ class Game:
 
 
 if __name__ == "__main__":
-
-    # Difficulty settings
-    # Easy      ->  10
-    # Medium    ->  25
-    # Hard      ->  40
-    # Harder    ->  60
-    # Impossible->  120
-    difficulty = 1
+    difficulty = 50
 
     # Window size
     frame_size_x = 750
     frame_size_y = 500
 
-    snake = Snake(100, 50, [[100, 50], [100-10, 50], [100-(2*10), 50]],[100, 50])
+    snake = Snake(100, 50, [[100, 50], [100 - 10, 50], [100 - (2 * 10), 50]], [100, 50])
     game = Game(frame_size_x, frame_size_y, difficulty, snake)
 
     while True:
