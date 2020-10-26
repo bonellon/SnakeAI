@@ -1,5 +1,9 @@
+import pygame
+
 from Game import Game
 from Snake import Snake
+
+red = pygame.Color(255, 0, 0)
 
 class Node:
     # Initialize the class
@@ -24,33 +28,58 @@ class Node:
 
 
 class AStarModel:
+    def __init__(self):
+        self.path = []
+        self.game = None
 
 
     def onGameOver(self, score):
         print(score)
+        self.game_to_map()
 
-    def convert_path_to_direction(self, step, game):
-        snake_head_x = game.snake.head[0]
-        snake_head_y = game.snake.head[1]
+    def convert_path_to_direction(self, step):
+        snake_head_x = self.game.snake.head[0]
+        snake_head_y = self.game.snake.head[1]
 
         if snake_head_x == step[0] and snake_head_y > step[1]:
-            return 9
+            print("UP")
+            return 0
 
         elif snake_head_x == step[0] and snake_head_y < step[1]:
+            print("DOWN")
             return 1
 
         elif snake_head_x < step[0] and snake_head_y == step[1]:
+            print("RIGHT")
             return 3
 
         elif snake_head_x > step[0] and snake_head_y == step[1]:
+            print("LEFT")
             return 2
 
         else:
             return "ERROR"
 
+    def generatePredictionFromPath(self):
+        step = self.path[0]
+        self.path.pop(0)
+        return self.convert_path_to_direction(step)
+
+    def drawPath(self):
+        for node in self.path:
+            pygame.draw.rect(self.game.game_window, red,
+                                 pygame.Rect(node[0], node[1], self.game.pixelSize, self.game.pixelSize))
+
+        pygame.display.update()
+        #pygame.time.wait(1000)
+
     def generatePrediction(self, game):
 
-        map = self.game_to_map(game)
+        self.game = game
+        if self.path != []:
+            return self.generatePredictionFromPath()
+
+        map, visual_map = self.game_to_map()
 
         open = []
         closed = []
@@ -76,7 +105,13 @@ class AStarModel:
                     current_node = current_node.parent
                 # path.append(start)
                 # Return reversed path
-                return self.convert_path_to_direction(path[::-1][0], game)
+                reverse_path = path[::-1]
+                self.path = path[::-1]
+
+                prediction = self.convert_path_to_direction(reverse_path[0])
+                self.drawPath()
+                self.path.pop(0)
+                return prediction
             # Unzip the current node position
             (x, y) = current_node.position
             # Get neighbors
@@ -104,6 +139,7 @@ class AStarModel:
                     # Everything is green, add neighbor to open list
                     open.append(neighbor)
             # Return None, no path is found
+        print("CANNOT FIND PATH HELP!!!!")
         return None
 
     # Check if a neighbor should be added to open list
@@ -113,18 +149,19 @@ class AStarModel:
                 return False
         return True
 
-    def game_to_map(self, game):
-        pixels_x = game.frame_size_x // game.pixelSize
-        pixels_y = game.frame_size_y // game.pixelSize
+    def game_to_map(self):
+        pixels_x = self.game.frame_size_x // self.game.pixelSize
+        pixels_y = self.game.frame_size_y // self.game.pixelSize
 
         map = {}
-        food_x = game.food.x // game.pixelSize
-        food_y = game.food.y // game.pixelSize
+        visual_map = {}
+        food_x = self.game.food.x // self.game.pixelSize
+        food_y = self.game.food.y // self.game.pixelSize
 
-        snake_head_x = game.snake.head[0] // game.pixelSize
-        snake_head_y = game.snake.head[1] // game.pixelSize
+        snake_head_x = self.game.snake.head[0] // self.game.pixelSize
+        snake_head_y = self.game.snake.head[1] // self.game.pixelSize
 
-        snake_body = [(int(body[0] // game.pixelSize), int(body[1] // game.pixelSize)) for body in game.snake.body]
+        snake_body = [(int(body[0] / self.game.pixelSize), int(body[1] / self.game.pixelSize)) for body in self.game.snake.body]
 
         for y in range(0, pixels_y):
             line = ""
@@ -134,22 +171,23 @@ class AStarModel:
                 if x == food_x and y == food_y:
                     char = "$"
 
-
                 #snake
-                elif x == snake_head_x and y == snake_head_y:
+                elif snake_head_x == x and snake_head_y == y:
                     char = "@"
 
                 elif any(body[0] == x and body[1] == y for body in snake_body):
                     char ="~"
 
-                #wall - not implemented
+                #wall - additional walls around the map. Not implemented yet.
+
                 else:
                     char = "."
 
-                map[x * game.pixelSize, y * game.pixelSize] = char
+                map[x * self.game.pixelSize, y * self.game.pixelSize] = char
                 line += char
+            visual_map[x,y] = line
 
-        return map
+        return map, visual_map
 
 
 # Difficulty settings
@@ -158,17 +196,21 @@ class AStarModel:
 # Hard      ->  40
 # Harder    ->  60
 # Impossible->  120
-difficulty = 50
+difficulty = 100
 
 # Window size
-frame_size_x = 720
-frame_size_y = 480
+frame_size_x = 600
+frame_size_y = 300
+pixelSize = 10
 
 aStar = AStarModel()
+snakeStart = [200,50]
 
 while True:
-    snake = Snake(100, 50, [[100, 50], [100 - 10, 50], [100 - (2 * 10), 50]], [100, 50])
-    currentGame = Game(frame_size_x, frame_size_y, difficulty, snake)
+    print("iter")
+    snake = Snake(snakeStart[0], snakeStart[1], [snakeStart, [snakeStart[0]-pixelSize, snakeStart[1]],
+                                                 [snakeStart[0]-pixelSize*2, snakeStart[1]]], snakeStart)
+    currentGame = Game(frame_size_x, frame_size_y, difficulty, snake, pixelSize)
 
     while currentGame.snake.alive:
         currentGame.step(aStar, "ASTAR")

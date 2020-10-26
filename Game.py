@@ -29,17 +29,17 @@ fps_controller = pygame.time.Clock()
 
 
 class Game:
-    def __init__(self, x, y, difficulty, snake):
+    def __init__(self, x, y, difficulty, snake, pixelSize):
+        self.pixelSize = pixelSize
         self.frame_size_x = x
         self.frame_size_y = y
-        self.pixelSize = 10
         self.score = 0
         self.difficulty = difficulty
         self.snake = snake
-        self.food = Food(random.randrange(1, (self.frame_size_x // self.pixelSize)) * self.pixelSize,
-                         random.randrange(1, (self.frame_size_y // self.pixelSize)) * self.pixelSize)
+        self.food = Food(random.randrange(1, ((self.frame_size_x - self.pixelSize) // self.pixelSize)) * self.pixelSize,
+                         random.randrange(1, ((self.frame_size_y - self.pixelSize) // self.pixelSize)) * self.pixelSize)
 
-        self.game_window = pygame.display.set_mode((self.frame_size_x, self.frame_size_y))
+        self.game_window = pygame.display.set_mode((self.frame_size_x+self.pixelSize, self.frame_size_y+self.pixelSize))
 
     def show_score(self, choice, color, font, size):
         score_font = pygame.font.SysFont(font, size)
@@ -270,27 +270,7 @@ class Game:
             self.snake.x -= self.pixelSize
         if self.snake.direction == 'RIGHT':
             self.snake.x += self.pixelSize
-        # Snake body growing mechanism
-        self.snake.body.insert(0, list([self.snake.x, self.snake.y]))
-        if self.collision_food():
-            self.score += 1
-            self.food.spawned = False
 
-            if model == "QLearning":
-                model.onScore(self.paramsToState())
-        else:
-            self.snake.body.pop()
-        self.snake.head = self.snake.body[0]
-
-        if not self.food.spawned:
-            self.food.x = random.randrange(1, (self.frame_size_x // self.pixelSize)) * self.pixelSize
-            self.food.y = random.randrange(1, (self.frame_size_y // self.pixelSize)) * self.pixelSize
-
-            while [self.food.x, self.food.y] in self.snake.body:
-                self.food.x = random.randrange(1, (self.frame_size_x // self.pixelSize)) * self.pixelSize
-                self.food.y = random.randrange(1, (self.frame_size_y // self.pixelSize)) * self.pixelSize
-
-        self.food.spawned = True
         # GFX
         self.game_window.fill(black)
         body_part = 0
@@ -302,8 +282,6 @@ class Game:
                 pygame.draw.rect(self.game_window, green, pygame.Rect(node[0], node[1], self.pixelSize, self.pixelSize))
             body_part += 1
 
-        # Snake food
-        pygame.draw.rect(self.game_window, white, pygame.Rect(self.food.x, self.food.y, self.pixelSize, self.pixelSize))
         # Game Over conditions
         # Getting out of bounds
         if self.collision_boundaries(self.snake.head):
@@ -319,26 +297,54 @@ class Game:
             self.snake.alive = False
             return self.paramsToState(), self.score, True
 
+        # Snake food
+        # Snake body growing mechanism
+        self.snake.body.insert(0, list([self.snake.x, self.snake.y]))
+        self.snake.head = self.snake.body[0]
+        if self.collision_food():
+            self.score += 1
+            self.food.spawned = False
+
+            if model == "QLearning":
+                model.onScore(self.paramsToState())
         else:
-            self.score = self.score
+            self.snake.body.pop()
+
+        if not self.food.spawned:
+            self.food.x = random.randrange(1, (self.frame_size_x // self.pixelSize)) * self.pixelSize
+            self.food.y = random.randrange(1, (self.frame_size_y // self.pixelSize)) * self.pixelSize
+
+            while [self.food.x, self.food.y] in self.snake.body:
+                self.food.x = random.randrange(1, (self.frame_size_x // self.pixelSize)) * self.pixelSize
+                self.food.y = random.randrange(1, (self.frame_size_y // self.pixelSize)) * self.pixelSize
+
+        self.food.spawned = True
+
+        pygame.draw.rect(self.game_window, white, pygame.Rect(self.food.x, self.food.y, self.pixelSize, self.pixelSize))
 
         self.show_score(1, white, 'consolas', 20)
         # Refresh game screen
         pygame.display.update()
         # Refresh rate
         fps_controller.tick(self.difficulty)
+
+        snakeHead = self.snake.head
+        foodLoc = (self.food.x, self.food.y)
+
         return self.paramsToState(), self.score, False
 
 
 if __name__ == "__main__":
-    difficulty = 50
+    difficulty = 1
 
     # Window size
     frame_size_x = 750
     frame_size_y = 500
 
-    snake = Snake(100, 50, [[100, 50], [100 - 10, 50], [100 - (2 * 10), 50]], [100, 50])
-    game = Game(frame_size_x, frame_size_y, difficulty, snake)
+    pixelSize = 10
+
+    snake = Snake(100, 50, [[100, 50], [100 - pixelSize, 50], [100 - (2 * pixelSize), 50]], [100, 50])
+    game = Game(frame_size_x, frame_size_y, difficulty, snake, pixelSize)
 
     while True:
         game.step(None, "MANUAL")

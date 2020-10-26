@@ -173,13 +173,14 @@ class QLearningModel:
 difficulty = 50
 
 # Window size
-frame_size_x = 720
-frame_size_y = 480
+frame_size_x = 800
+frame_size_y = 500
 
 qLearn = QLearningModel()
+pixelSize = 50
 
 while True:
-    snake = Snake(100, 50, [[100, 50], [100 - 10, 50], [100 - (2 * 10), 50]], [100, 50])
-    game = Game(frame_size_x, frame_size_y, difficulty, snake)
+    snake = Snake(100, 50, [[100, 50], [100 - pixelSize, 50], [100 - (2 * pixelSize), 50]], [100, 50])
+    game = Game(frame_size_x, frame_size_y, difficulty, snake, pixelSize)
     while game.snake.alive:
         game.step(qLearn, "QLearning")
