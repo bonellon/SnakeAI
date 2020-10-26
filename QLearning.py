@@ -29,7 +29,7 @@ class QLearningModel:
         self.emin = 0.0001
 
         try:
-            with open("Q.pickle", "rb") as file:
+            with open("Q-distance.pickle", "rb") as file:
                 self.Q = defaultdict(lambda: [0, 0, 0, 0], pickle.load(file))
         except:
             self.Q = defaultdict(lambda: [0, 0, 0, 0])
@@ -117,7 +117,7 @@ class QLearningModel:
 
         # save Q as pickle
         if self.gameCounter % 200 == 0:
-            with open("Q.pickle", "wb") as file:
+            with open("Q-distance.pickle", "wb") as file:
                 pickle.dump(dict(self.Q), file)
             print("+++++++++ Pickle saved +++++++++")
 

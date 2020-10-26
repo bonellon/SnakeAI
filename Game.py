@@ -246,6 +246,9 @@ class Game:
                     # Esc -> Create event to quit the game
                     if event.key == pygame.K_ESCAPE:
                         pygame.event.post(pygame.event.Event(pygame.QUIT))
+
+        elif gameType == "ASTAR":
+            action = model.generatePrediction(self)
         else:
             action = model.generatePrediction(self.paramsToState())
 
@@ -273,7 +276,7 @@ class Game:
             self.score += 1
             self.food.spawned = False
 
-            if model is not None:
+            if model == "QLearning":
                 model.onScore(self.paramsToState())
         else:
             self.snake.body.pop()
